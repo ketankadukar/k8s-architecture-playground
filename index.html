@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kubernetes Admission Controllers — Interactive Guide</title>
+<title>Kubernetes Admission Controllers — Interactive Blog</title>
 <style>
   body { font-family: system-ui, sans-serif; background:#0e1116; color:#e6edf3; margin:0; }
-  header { background:#161a22; padding:20px; border-bottom:2px solid #30363d; }
-  h1,h2 { color:#2f81f7; margin:0 0 10px; }
+  header { background:#161a22; padding:30px; border-bottom:2px solid #30363d; text-align:center; }
+  h1,h2,h3 { color:#2f81f7; margin-bottom:10px; }
   p { color:#9da7b3; line-height:1.6; }
   .wrap { max-width:1000px; margin:auto; padding:20px; }
   .card { background:#121721; border:1px solid #2a3240; border-radius:12px; padding:20px; margin-bottom:20px; }
+  .diagram { background:#0c1118; border:1px solid #2a3240; border-radius:12px; padding:20px; margin-bottom:20px; }
   .dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; }
   .blue{background:#2f81f7;} .orange{background:#d29922;} .purple{background:#b392f0;}
   .controls { margin-top:10px; }
@@ -19,21 +20,52 @@
   .timeline { display:flex; gap:6px; margin-top:10px; }
   .stepdot { width:14px; height:14px; border-radius:50%; background:#1b2330; border:1px solid #2a3240; }
   .stepdot.active { background:#2f81f7; }
+  footer { background:#161a22; text-align:center; padding:20px; border-top:2px solid #30363d; color:#9da7b3; }
 </style>
 </head>
 <body>
 <header>
-  <div class="wrap">
-    <h1>Kubernetes Admission Controllers</h1>
-    <p>Interactive walkthrough of how admission controllers intercept API requests, mutate or validate them, and enforce cluster policies.</p>
-  </div>
+  <h1>Kubernetes Admission Controllers</h1>
+  <p>Learn how Kubernetes enforces policies and mutates requests with interactive diagrams and notes.</p>
 </header>
 
 <main class="wrap">
   <!-- Overview -->
   <section class="card">
-    <h2>What are Admission Controllers?</h2>
-    <p>An admission controller is code in the API Server that intercepts requests <span class="dot blue"></span>after authentication/authorization but <span class="dot orange"></span>before persistence in etcd. They can <b>mutate</b> objects (add defaults, inject sidecars) or <b>validate</b> them (enforce quotas, deny insecure pods). Reads (get/list/watch) bypass admission control.</p>
+    <h2>Overview</h2>
+    <p>Admission controllers are pieces of code that intercept requests to the API Server <span class="dot blue"></span>after authentication/authorization but <span class="dot orange"></span>before persistence in etcd. They can <b>mutate</b> objects (add defaults, inject sidecars) or <b>validate</b> them (enforce quotas, deny insecure pods). Reads (get/list/watch) bypass admission control.</p>
+  </section>
+
+  <!-- Fancy Diagram -->
+  <section class="diagram">
+    <h2>Live Motion Diagram</h2>
+    <svg viewBox="0 0 800 200" width="100%" height="200">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#2f81f7"/>
+        </marker>
+      </defs>
+      <!-- Flow: Client -> API Server -> Admission -> etcd -->
+      <circle cx="100" cy="100" r="20" fill="#2f81f7">
+        <animate attributeName="r" values="20;25;20" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="70" y="140" fill="#9da7b3">API Server</text>
+      <line x1="120" y1="100" x2="250" y2="100" stroke="#2f81f7" stroke-width="2" marker-end="url(#arrow)">
+        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="2s" repeatCount="indefinite"/>
+      </line>
+      <circle cx="280" cy="100" r="20" fill="#b392f0">
+        <animate attributeName="r" values="20;25;20" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="240" y="140" fill="#9da7b3">Admission</text>
+      <line x1="300" y1="100" x2="430" y2="100" stroke="#2f81f7" stroke-width="2" marker-end="url(#arrow)">
+        <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="2s" repeatCount="indefinite"/>
+      </line>
+      <circle cx="460" cy="100" r="20" fill="#d29922">
+        <animate attributeName="r" values="20;25;20" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="440" y="140" fill="#9da7b3">etcd</text>
+    </svg>
+    <p>This animated diagram shows how requests flow through the API Server, admission controllers, and finally into etcd.</p>
   </section>
 
   <!-- Interactive lifecycle -->
@@ -62,7 +94,7 @@
     </ul>
   </section>
 
-  <!-- Enabling/disabling -->
+  <!-- Configuring -->
   <section class="card">
     <h2>Configuring Admission Controllers</h2>
     <p>Cluster admins enable or disable plugins via API Server flags:</p>
@@ -74,8 +106,8 @@ kube-apiserver --disable-admission-plugins=AlwaysDeny,PodNodeSelector
   </section>
 </main>
 
-<footer class="wrap">
-  <p>Built for learning. Extend this site with deeper dives into each plugin, examples, and configuration tips.</p>
+<footer>
+  <p>Built for learning. Extend this blog with deeper dives into each plugin, examples, and configuration tips.</p>
 </footer>
 
 <script>
@@ -93,14 +125,4 @@ kube-apiserver --disable-admission-plugins=AlwaysDeny,PodNodeSelector
   const reset=document.getElementById('reset');
   function render(){
     const s=steps[idx];
-    frame.innerHTML=`<div><h3>${s.title}</h3><p>${s.body}</p></div>`;
-    timeline.innerHTML=steps.map((_,i)=>`<div class="stepdot ${i===idx?'active':''}"></div>`).join('');
-    prev.disabled=idx===0; next.disabled=idx===steps.length-1;
-  }
-  prev.onclick=()=>{idx=Math.max(0,idx-1);render();};
-  next.onclick=()=>{idx=Math.min(steps.length-1,idx+1);render();};
-  reset.onclick=()=>{idx=0;render();};
-  render();
-</script>
-</body>
-</html>
+    frame.innerHTML=`<div><
