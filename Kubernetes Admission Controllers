@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kubernetes Admission Controllers — Interactive Guide</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#0e1116; color:#e6edf3; margin:0; }
+  header { background:#161a22; padding:20px; border-bottom:2px solid #30363d; }
+  h1,h2 { color:#2f81f7; margin:0 0 10px; }
+  p { color:#9da7b3; line-height:1.6; }
+  .wrap { max-width:1000px; margin:auto; padding:20px; }
+  .card { background:#121721; border:1px solid #2a3240; border-radius:12px; padding:20px; margin-bottom:20px; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .blue{background:#2f81f7;} .orange{background:#d29922;} .purple{background:#b392f0;}
+  .controls { margin-top:10px; }
+  button { background:#1f6feb; color:white; border:none; border-radius:8px; padding:8px 12px; margin-right:6px; cursor:pointer; }
+  button.secondary { background:#0c1118; color:#e6edf3; border:1px solid #2a3240; }
+  .timeline { display:flex; gap:6px; margin-top:10px; }
+  .stepdot { width:14px; height:14px; border-radius:50%; background:#1b2330; border:1px solid #2a3240; }
+  .stepdot.active { background:#2f81f7; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Kubernetes Admission Controllers</h1>
+    <p>Interactive walkthrough of how admission controllers intercept API requests, mutate or validate them, and enforce cluster policies.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Overview -->
+  <section class="card">
+    <h2>What are Admission Controllers?</h2>
+    <p>An admission controller is code in the API Server that intercepts requests <span class="dot blue"></span>after authentication/authorization but <span class="dot orange"></span>before persistence in etcd. They can <b>mutate</b> objects (add defaults, inject sidecars) or <b>validate</b> them (enforce quotas, deny insecure pods). Reads (get/list/watch) bypass admission control.</p>
+  </section>
+
+  <!-- Interactive lifecycle -->
+  <section class="card">
+    <h2>Admission Control Phases</h2>
+    <p>Click through to see how a request flows:</p>
+    <div class="controls">
+      <button id="prev">◀ Prev</button>
+      <button id="next">Next ▶</button>
+      <button class="secondary" id="reset">Reset</button>
+    </div>
+    <div id="frame" style="margin-top:12px"></div>
+    <div id="timeline" class="timeline"></div>
+  </section>
+
+  <!-- Key plugins -->
+  <section class="card">
+    <h2>Key Admission Controllers</h2>
+    <ul>
+      <li><span class="dot purple"></span><b>MutatingAdmissionWebhook:</b> Calls external webhooks to modify objects.</li>
+      <li><span class="dot purple"></span><b>ValidatingAdmissionWebhook:</b> Calls external webhooks to validate objects.</li>
+      <li><span class="dot purple"></span><b>ValidatingAdmissionPolicy:</b> Declarative validation without external calls.</li>
+      <li><span class="dot purple"></span><b>LimitRanger:</b> Enforces resource limits and defaults.</li>
+      <li><span class="dot purple"></span><b>ResourceQuota:</b> Ensures requests don’t exceed namespace quotas.</li>
+      <li><span class="dot purple"></span><b>PodSecurity:</b> Enforces Pod Security Standards.</li>
+    </ul>
+  </section>
+
+  <!-- Enabling/disabling -->
+  <section class="card">
+    <h2>Configuring Admission Controllers</h2>
+    <p>Cluster admins enable or disable plugins via API Server flags:</p>
+    <pre style="background:#0c1118; padding:10px; border-radius:8px; overflow-x:auto;">
+kube-apiserver --enable-admission-plugins=NamespaceLifecycle,LimitRanger
+kube-apiserver --disable-admission-plugins=AlwaysDeny,PodNodeSelector
+    </pre>
+    <p>Defaults include NamespaceLifecycle, LimitRanger, MutatingAdmissionWebhook, ResourceQuota, PodSecurity, and more.</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Built for learning. Extend this site with deeper dives into each plugin, examples, and configuration tips.</p>
+</footer>
+
+<script>
+  const steps = [
+    { title:"1) Request arrives", body:"A client sends a create/update/delete request. API Server authenticates and authorizes it." },
+    { title:"2) Mutating admission", body:"Mutating controllers run first. They may add defaults, inject sidecars, or modify fields." },
+    { title:"3) Validating admission", body:"Validating controllers run next. They enforce quotas, security, and reject invalid objects." },
+    { title:"4) Persistence", body:"If all controllers approve, the object is stored in etcd and becomes part of cluster state." }
+  ];
+  let idx=0;
+  const frame=document.getElementById('frame');
+  const timeline=document.getElementById('timeline');
+  const prev=document.getElementById('prev');
+  const next=document.getElementById('next');
+  const reset=document.getElementById('reset');
+  function render(){
+    const s=steps[idx];
+    frame.innerHTML=`<div><h3>${s.title}</h3><p>${s.body}</p></div>`;
+    timeline.innerHTML=steps.map((_,i)=>`<div class="stepdot ${i===idx?'active':''}"></div>`).join('');
+    prev.disabled=idx===0; next.disabled=idx===steps.length-1;
+  }
+  prev.onclick=()=>{idx=Math.max(0,idx-1);render();};
+  next.onclick=()=>{idx=Math.min(steps.length-1,idx+1);render();};
+  reset.onclick=()=>{idx=0;render();};
+  render();
+</script>
+</body>
+</html>
