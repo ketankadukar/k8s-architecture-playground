@@ -3,359 +3,104 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kubernetes Architecture — Raft-Style Interactive Guide</title>
-<meta name="description" content="Interactive walkthrough of Kubernetes architecture: API Server, etcd, Scheduler, Controller Manager, Cloud Controller Manager, and worker node components." />
+<title>Kubernetes Admission Controllers — Interactive Guide</title>
 <style>
-  :root{
-    --bg:#0e1116; --panel:#121721; --panel2:#0c121a; --text:#e6edf3; --muted:#9da7b3;
-    --blue:#2f81f7; --green:#3fb950; --orange:#d29922; --purple:#b392f0; --yellow:#f2cc60; --red:#f85149;
-    --border:#2a3240; --accent:#6ea3ff;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-  a{color:var(--accent);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:1200px;margin:0 auto;padding:0 18px}
-  header{padding:30px 0;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(47,129,247,.10), transparent)}
-  h1{margin:0 0 6px}
-  h2{margin:26px 0 12px}
-  h3{margin:20px 0 8px}
-  p{color:var(--muted);line-height:1.7;margin:8px 0}
-  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .legend span{display:inline-flex;align-items:center;gap:8px}
-  .dot{width:10px;height:10px;border-radius:50%}
-  .dot.blue{background:var(--blue)} .dot.green{background:var(--green)}
-  .dot.orange{background:var(--orange)} .dot.purple{background:var(--purple)}
-  .dot.yellow{background:var(--yellow)} .dot.red{background:var(--red)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
-  .card.alt{background:var(--panel2)}
-  .grid{display:grid;gap:16px}
-  @media(min-width:960px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:repeat(3,1fr)} }
-  .diagram{background:#0b1017;border:1px solid var(--border);border-radius:14px;padding:16px}
-  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .node{background:#101622;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
-  .title{font-weight:600}
-  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  button{background:#1f6feb;color:white;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
-  button.secondary{background:#0c1118;color:var(--text);border:1px solid var(--border)}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .timeline{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-  .stepdot{width:14px;height:14px;border-radius:50%;background:#1b2330;border:1px solid var(--border)}
-  .stepdot.active{background:var(--blue)}
-  .badge{display:inline-block;padding:4px 8px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:#0f1420;margin-right:6px}
-  .list{margin:10px 0 0 0;padding-left:18px}
-  .list li{margin:6px 0}
-  .callout{border-left:4px solid var(--blue);background:#0c121a;border-radius:10px;padding:12px;margin:8px 0}
-  .svgwrap{margin-top:12px}
-  footer{border-top:1px solid var(--border);padding:18px;margin-top:24px;color:var(--muted)}
-  .fade{animation:fade .35s ease}
-  @keyframes fade{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .pulse{animation:pulse 2s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,129,247,0.6)}70%{box-shadow:0 0 0 10px rgba(47,129,247,0)}100%{box-shadow:0 0 0 0 rgba(47,129,247,0)}}
+  body { font-family: system-ui, sans-serif; background:#0e1116; color:#e6edf3; margin:0; }
+  header { background:#161a22; padding:20px; border-bottom:2px solid #30363d; }
+  h1,h2 { color:#2f81f7; margin:0 0 10px; }
+  p { color:#9da7b3; line-height:1.6; }
+  .wrap { max-width:1000px; margin:auto; padding:20px; }
+  .card { background:#121721; border:1px solid #2a3240; border-radius:12px; padding:20px; margin-bottom:20px; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .blue{background:#2f81f7;} .orange{background:#d29922;} .purple{background:#b392f0;}
+  .controls { margin-top:10px; }
+  button { background:#1f6feb; color:white; border:none; border-radius:8px; padding:8px 12px; margin-right:6px; cursor:pointer; }
+  button.secondary { background:#0c1118; color:#e6edf3; border:1px solid #2a3240; }
+  .timeline { display:flex; gap:6px; margin-top:10px; }
+  .stepdot { width:14px; height:14px; border-radius:50%; background:#1b2330; border:1px solid #2a3240; }
+  .stepdot.active { background:#2f81f7; }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <h1>Kubernetes Architecture — Interactive Visual Guide</h1>
-    <p>Start with the complete control plane and worker node map, then click through the story of how Pods are scheduled, started, and served.</p>
-    <div class="legend">
-      <span><span class="dot blue"></span> Control plane</span>
-      <span><span class="dot orange"></span> State (etcd)</span>
-      <span><span class="dot green"></span> Worker/data plane</span>
-      <span><span class="dot purple"></span> Policy/admission</span>
-      <span><span class="dot yellow"></span> Networking</span>
-    </div>
+    <h1>Kubernetes Admission Controllers</h1>
+    <p>Interactive walkthrough of how admission controllers intercept API requests, mutate or validate them, and enforce cluster policies.</p>
   </div>
 </header>
 
 <main class="wrap">
-  <!-- 1) Complete architecture map -->
+  <!-- Overview -->
   <section class="card">
-    <h2>Complete architecture map</h2>
-    <p class="callout">Kubernetes is a distributed system with a control plane (API Server, etcd, Scheduler, Controller Manager, Cloud Controller Manager) and worker nodes running kubelet, kube-proxy, and a container runtime.</p>
-    <div class="diagram" id="archmap">
-      <div class="grid grid-3">
-        <div class="node fade"><span class="dot blue"></span>
-          <div><div class="title">API Server</div>
-          <p class="muted">Central hub exposing REST APIs over TLS. Validates, authenticates, authorizes requests; the aggregation layer extends APIs.</p></div>
-        </div>
-        <div class="node fade"><span class="dot orange"></span>
-          <div><div class="title">etcd</div>
-          <p class="muted">Strongly consistent distributed KV store holding cluster objects and state; watch APIs propagate changes; uses Raft for consensus.</p></div>
-        </div>
-        <div class="node fade"><span class="dot purple"></span>
-          <div><div class="title">Admission controllers</div>
-          <p class="muted">Mutate/validate objects post-authN/Z before persistence, enforcing policy and defaults.</p></div>
-        </div>
-        <div class="node fade"><span class="dot blue"></span>
-          <div><div class="title">Scheduler</div>
-          <p class="muted">Filters and scores nodes, binds Pods; supports plugins, priorities, and custom schedulers.</p></div>
-        </div>
-        <div class="node fade"><span class="dot blue"></span>
-          <div><div class="title">Controller Manager</div>
-          <p class="muted">Runs reconcilers (Deployment, ReplicaSet, Job, Node, etc.) to keep actual state matching desired state.</p></div>
-        </div>
-        <div class="node fade"><span class="dot blue"></span>
-          <div><div class="title">Cloud Controller Manager</div>
-          <p class="muted">Bridges cloud APIs; node, route, and service controllers manage cloud resources like LBs and volumes.</p></div>
-        </div>
-        <div class="node fade"><span class="dot green"></span>
-          <div><div class="title">Worker nodes</div>
-          <p class="muted">Run workloads via kubelet and container runtime; networking by CNI and kube‑proxy (iptables/NFT/IPVS).</p></div>
-        </div>
-      </div>
-      <div class="svgwrap">
-        <svg viewBox="0 0 1100 210" width="100%" height="210" aria-label="Architecture flow">
-          <defs>
-            <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L9,3 z" fill="#2f81f7"/>
-            </marker>
-          </defs>
-          <!-- flow: client -> apiserver -> admission -> etcd -> scheduler -> controller -> nodes -->
-          <line x1="40" y1="50" x2="1060" y2="50" stroke="#2f81f7" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="40" y="35" fill="#9da7b3" font-size="12">kubectl / controllers / clients</text>
-          <circle cx="180" cy="50" r="6" fill="#2f81f7"/><text x="160" y="80" fill="#9da7b3" font-size="12">API Server</text>
-          <circle cx="330" cy="50" r="6" fill="#b392f0"/><text x="305" y="80" fill="#9da7b3" font-size="12">Admission</text>
-          <circle cx="480" cy="50" r="6" fill="#d29922"/><text x="465" y="80" fill="#9da7b3" font-size="12">etcd</text>
-          <circle cx="630" cy="50" r="6" fill="#2f81f7"/><text x="610" y="80" fill="#9da7b3" font-size="12">Scheduler</text>
-          <circle cx="780" cy="50" r="6" fill="#2f81f7"/><text x="760" y="80" fill="#9da7b3" font-size="12">Controller Mgr</text>
-          <circle cx="930" cy="50" r="6" fill="#3fb950"/><text x="910" y="80" fill="#9da7b3" font-size="12">Worker nodes</text>
-
-          <!-- worker node box -->
-          <rect x="880" y="110" width="190" height="80" rx="10" ry="10" fill="#101622" stroke="#2a3240"/>
-          <text x="892" y="130" fill="#cbd3dd" font-size="12">Node</text>
-          <text x="892" y="150" fill="#9da7b3" font-size="12">kubelet • containerd/CRI‑O</text>
-          <text x="892" y="170" fill="#9da7b3" font-size="12">CNI • kube‑proxy</text>
-        </svg>
-      </div>
-    </div>
+    <h2>What are Admission Controllers?</h2>
+    <p>An admission controller is code in the API Server that intercepts requests <span class="dot blue"></span>after authentication/authorization but <span class="dot orange"></span>before persistence in etcd. They can <b>mutate</b> objects (add defaults, inject sidecars) or <b>validate</b> them (enforce quotas, deny insecure pods). Reads (get/list/watch) bypass admission control.</p>
   </section>
 
-  <!-- 2) Pod lifecycle interactive story -->
-  <section class="card alt">
-    <h2>Pod lifecycle — click through the story</h2>
-    <p>Follow a Pod from manifest to running containers and service traffic. Use Next/Prev to walk the sequence.</p>
+  <!-- Interactive lifecycle -->
+  <section class="card">
+    <h2>Admission Control Phases</h2>
+    <p>Click through to see how a request flows:</p>
     <div class="controls">
       <button id="prev">◀ Prev</button>
       <button id="next">Next ▶</button>
       <button class="secondary" id="reset">Reset</button>
     </div>
-    <div id="frame" class="fade" style="margin-top:12px"></div>
+    <div id="frame" style="margin-top:12px"></div>
     <div id="timeline" class="timeline"></div>
   </section>
 
-  <!-- 3) Scheduling internals -->
+  <!-- Key plugins -->
   <section class="card">
-    <h2>Scheduling internals</h2>
-    <p>The scheduler filters and scores candidate nodes, then binds the Pod. It supports plugins, priorities, and custom schedulers for specialized logic.</p>
-    <div class="grid grid-3">
-      <div>
-        <span class="badge">Inputs</span>
-        <ul class="list">
-          <li><b class="label">Pod spec:</b> requests/limits, affinity/anti‑affinity</li>
-          <li><b class="label">Cluster:</b> node capacity, taints/tolerations</li>
-          <li><b class="label">Topology:</b> zones, spread constraints</li>
-          <li><b class="label">Priority:</b> preemption and queueing</li>
-        </ul>
-      </div>
-      <div>
-        <span class="badge">Phases</span>
-        <ul class="list">
-          <li><b class="label">PreFilter:</b> quick checks for resource fit</li>
-          <li><b class="label">Filter:</b> remove non‑viable nodes</li>
-          <li><b class="label">Score:</b> rank remaining nodes</li>
-          <li><b class="label">Bind:</b> write decision via API Server</li>
-        </ul>
-      </div>
-      <div>
-        <span class="badge">Plugins</span>
-        <ul class="list">
-          <li><b class="label">NodeResources:</b> balanced allocation</li>
-          <li><b class="label">TopologySpread:</b> zone distribution</li>
-          <li><b class="label">InterPodAffinity:</b> co‑location</li>
-          <li><b class="label">TaintsTolerations:</b> dedicated nodes</li>
-        </ul>
-      </div>
-    </div>
+    <h2>Key Admission Controllers</h2>
+    <ul>
+      <li><span class="dot purple"></span><b>MutatingAdmissionWebhook:</b> Calls external webhooks to modify objects.</li>
+      <li><span class="dot purple"></span><b>ValidatingAdmissionWebhook:</b> Calls external webhooks to validate objects.</li>
+      <li><span class="dot purple"></span><b>ValidatingAdmissionPolicy:</b> Declarative validation without external calls.</li>
+      <li><span class="dot purple"></span><b>LimitRanger:</b> Enforces resource limits and defaults.</li>
+      <li><span class="dot purple"></span><b>ResourceQuota:</b> Ensures requests don’t exceed namespace quotas.</li>
+      <li><span class="dot purple"></span><b>PodSecurity:</b> Enforces Pod Security Standards.</li>
+    </ul>
   </section>
 
-  <!-- 4) Component deep dives -->
-  <section class="grid grid-2">
-    <div class="card">
-      <h2>API Server request path</h2>
-      <p>All components talk to the API Server over TLS; it handles authN, authZ, validation, mutation, persistence (to etcd), and watch notifications.</p>
-      <ul class="list">
-        <li><b class="label">AuthN:</b> client certs, tokens, OIDC</li>
-        <li><b class="label">AuthZ:</b> RBAC, ABAC, webhook</li>
-        <li><b class="label">Admission:</b> Mutating/Validating controllers & webhooks</li>
-        <li><b class="label">Persistence:</b> store objects in etcd under /registry</li>
-        <li><b class="label">Watch:</b> controllers/kubelets react to changes</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h2>Worker node components</h2>
-      <p>Kubelet runs as a system daemon, driving containers via CRI; CNI configures pod networking; kube‑proxy implements Services using iptables/NFT/IPVS.</p>
-      <ul class="list">
-        <li><b class="label">Kubelet:</b> applies PodSpecs; probes; volumes; status reporting</li>
-        <li><b class="label">Runtime (CRI):</b> containerd/CRI‑O with OCI and runc</li>
-        <li><b class="label">CNI:</b> IP assignment, routes, policies (e.g., Cilium, Calico)</li>
-        <li><b class="label">kube‑proxy:</b> TCP/UDP/SCTP proxying via iptables/NFT/IPVS</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 5) Cloud Controller Manager -->
-  <section class="card alt">
-    <h2>Cloud Controller Manager</h2>
-    <p>In cloud environments, CCM integrates with provider APIs to manage nodes, routes, load balancers, and storage volumes through cloud‑specific controllers.</p>
-    <div class="grid grid-3">
-      <div>
-        <span class="badge">Node controller</span>
-        <p>Labels, annotations, capacity, health sourced from cloud APIs.</p>
-      </div>
-      <div>
-        <span class="badge">Route controller</span>
-        <p>Programs network routes to enable pod connectivity across nodes.</p>
-      </div>
-      <div>
-        <span class="badge">Service controller</span>
-        <p>Provisions load balancers, IPs, and integrates them with Service objects.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 6) Networking overview -->
+  <!-- Enabling/disabling -->
   <section class="card">
-    <h2>Networking & Services</h2>
-    <p>Services offer stable virtual IPs; endpoints list pod backends; kube‑proxy routes traffic. Ingress controllers expose HTTP externally; NetworkPolicies restrict flows.</p>
-    <div class="grid grid-3">
-      <div>
-        <span class="badge">Service</span>
-        <p>ClusterIP/NodePort/LB with endpoint backends, discovered by controllers.</p>
-      </div>
-      <div>
-        <span class="badge">Ingress</span>
-        <p>HTTP routing at the edge via an ingress controller.</p>
-      </div>
-      <div>
-        <span class="badge">NetworkPolicy</span>
-        <p>Pod‑level traffic controls enforced by CNI plugins.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 7) Glossary -->
-  <section class="card alt">
-    <h2>Glossary</h2>
-    <div class="grid grid-3">
-      <div><span class="badge">Desired state</span><p>Declared via manifests; controllers reconcile continuously.</p></div>
-      <div><span class="badge">Controller</span><p>Watches & updates objects to match desired state.</p></div>
-      <div><span class="badge">Aggregation layer</span><p>Extends Kubernetes API with custom resources.</p></div>
-      <div><span class="badge">CRD</span><p>Define new resource types with custom controllers.</p></div>
-      <div><span class="badge">Priority</span><p>Scheduler prefers higher priority Pods; may preempt.</p></div>
-      <div><span class="badge">Static Pods</span><p>Started by kubelet from local files during bootstrap.</p></div>
-    </div>
-  </section>
-
-  <!-- 8) Self-check quiz -->
-  <section class="card">
-    <h2>Self‑check</h2>
-    <p>Test your understanding. Answers reveal after you choose.</p>
-    <div id="quiz"></div>
+    <h2>Configuring Admission Controllers</h2>
+    <p>Cluster admins enable or disable plugins via API Server flags:</p>
+    <pre style="background:#0c1118; padding:10px; border-radius:8px; overflow-x:auto;">
+kube-apiserver --enable-admission-plugins=NamespaceLifecycle,LimitRanger
+kube-apiserver --disable-admission-plugins=AlwaysDeny,PodNodeSelector
+    </pre>
+    <p>Defaults include NamespaceLifecycle, LimitRanger, MutatingAdmissionWebhook, ResourceQuota, PodSecurity, and more.</p>
   </section>
 </main>
 
 <footer class="wrap">
-  <p>Publish this file via GitHub Pages for a free site. Extend with storage (CSI), advanced scheduling, and security deep dives.</p>
+  <p>Built for learning. Extend this site with deeper dives into each plugin, examples, and configuration tips.</p>
 </footer>
 
 <script>
-  // Pod lifecycle steps
   const steps = [
-    { title:"1) Apply manifest (kubectl → API Server)", color:"blue",
-      body:"You submit a Pod/Deployment. The API Server authenticates, authorizes, validates, and accepts the request over TLS." },
-    { title:"2) Admission controllers", color:"purple",
-      body:"Mutating/Validating admissions enforce policy, defaults, and guardrails before persistence." },
-    { title:"3) Persist to etcd (desired state)", color:"orange",
-      body:"The API Server stores objects under /registry. Watches notify controllers and schedulers of changes." },
-    { title:"4) Scheduler observes unscheduled Pods", color:"blue",
-      body:"It filters non-viable nodes (taints, fit), scores candidates (balance, topology), and selects a node." },
-    { title:"5) Bind to node", color:"blue",
-      body:"The scheduler writes a binding via API Server, setting the Pod’s nodeName to finalize placement." },
-    { title:"6) Kubelet starts containers", color:"green",
-      body:"Kubelet uses CRI (containerd/CRI‑O) to pull images and run containers; CNI configures pod networking; volumes attach via CSI." },
-    { title:"7) Service routing", color:"yellow",
-      body:"kube‑proxy programs iptables/NFT/IPVS to load‑balance Service traffic to pod endpoints. Ingress exposes HTTP externally." },
-    { title:"8) Controllers reconcile", color:"blue",
-      body:"Deployment/ReplicaSet controllers ensure desired replicas; recover from failures and node changes." }
+    { title:"1) Request arrives", body:"A client sends a create/update/delete request. API Server authenticates and authorizes it." },
+    { title:"2) Mutating admission", body:"Mutating controllers run first. They may add defaults, inject sidecars, or modify fields." },
+    { title:"3) Validating admission", body:"Validating controllers run next. They enforce quotas, security, and reject invalid objects." },
+    { title:"4) Persistence", body:"If all controllers approve, the object is stored in etcd and becomes part of cluster state." }
   ];
-
-  const frame = document.getElementById('frame');
-  const timeline = document.getElementById('timeline');
-  const prev = document.getElementById('prev');
-  const next = document.getElementById('next');
-  const reset = document.getElementById('reset');
-  let idx = 0;
-
-  function renderStep() {
-    const s = steps[idx];
-    frame.innerHTML = `
-      <div class="node pulse">
-        <span class="dot ${s.color}"></span>
-        <div>
-          <div class="title">${s.title}</div>
-          <p>${s.body}</p>
-        </div>
-      </div>
-      <div class="svgwrap" aria-hidden="true">
-        <svg viewBox="0 0 900 90" width="100%" height="90">
-          <defs>
-            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L9,3 z" fill="#2f81f7"/>
-            </marker>
-          </defs>
-          <line x1="20" y1="45" x2="880" y2="45" stroke="#2f81f7" stroke-width="2" marker-end="url(#arrow2)"/>
-        </svg>
-      </div>
-    `;
-    timeline.innerHTML = steps.map((_, i)=>`<div class="stepdot ${i===idx?'active':''}" title="Step ${i+1}"></div>`).join('');
-    prev.disabled = idx===0; next.disabled = idx===steps.length-1;
+  let idx=0;
+  const frame=document.getElementById('frame');
+  const timeline=document.getElementById('timeline');
+  const prev=document.getElementById('prev');
+  const next=document.getElementById('next');
+  const reset=document.getElementById('reset');
+  function render(){
+    const s=steps[idx];
+    frame.innerHTML=`<div><h3>${s.title}</h3><p>${s.body}</p></div>`;
+    timeline.innerHTML=steps.map((_,i)=>`<div class="stepdot ${i===idx?'active':''}"></div>`).join('');
+    prev.disabled=idx===0; next.disabled=idx===steps.length-1;
   }
-
-  prev.addEventListener('click', ()=>{ idx = Math.max(0, idx-1); renderStep(); });
-  next.addEventListener('click', ()=>{ idx = Math.min(steps.length-1, idx+1); renderStep(); });
-  reset.addEventListener('click', ()=>{ idx = 0; renderStep(); });
-  renderStep();
-
-  // Simple quiz
-  const questions = [
-    { q:"Which component stores the cluster state?", choices:["API Server","etcd","Scheduler"], answer:1 },
-    { q:"Who assigns Pods to nodes?", choices:["kubelet","Scheduler","Controller Manager"], answer:1 },
-    { q:"Where are policies enforced before persistence?", choices:["Admission controllers","NetworkPolicy","kube‑proxy"], answer:0 },
-    { q:"What runs containers on a node?", choices:["containerd/CRI‑O","etcd","Ingress"], answer:0 },
-    { q:"Which component integrates cloud load balancers?", choices:["Cloud Controller Manager","CoreDNS","kube‑proxy"], answer:0 }
-  ];
-  const quizEl = document.getElementById('quiz');
-  questions.forEach((q,i)=>{
-    const block = document.createElement('div');
-    block.className = 'card alt';
-    const opts = q.choices.map((c,j)=>`
-      <label style="display:block;margin:6px 0;">
-        <input type="radio" name="q${i}" value="${j}" /> ${c}
-      </label>`).join('');
-    block.innerHTML = `<div class="title">${q.q}</div>${opts}<div class="badge" id="a${i}">Choose an answer</div>`;
-    quizEl.appendChild(block);
-  });
-  quizEl.addEventListener('change',(e)=>{
-    const name = e.target.name;
-    const i = parseInt(name.replace('q',''),10);
-    const val = parseInt(e.target.value,10);
-    const ans = questions[i].answer;
-    const el = document.getElementById('a'+i);
-    el.textContent = (val===ans) ? 'Correct' : 'Try again';
-    el.style.color = (val===ans) ? '#3fb950' : '#f85149';
-  });
+  prev.onclick=()=>{idx=Math.max(0,idx-1);render();};
+  next.onclick=()=>{idx=Math.min(steps.length-1,idx+1);render();};
+  reset.onclick=()=>{idx=0;render();};
+  render();
 </script>
 </body>
 </html>
