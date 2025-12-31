@@ -1,135 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Kubernetes Architecture Learning Site</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0e1116;
-      color: #e6edf3;
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-    }
-    header {
-      background: #161a22;
-      padding: 20px;
-      text-align: center;
-      border-bottom: 2px solid #30363d;
-    }
-    h1, h2 {
-      color: #2f81f7;
-    }
-    .container {
-      max-width: 1000px;
-      margin: auto;
-      padding: 20px;
-    }
-    .diagram {
-      background: #0c1118;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    .diagram pre {
-      background: #11161f;
-      padding: 15px;
-      border-radius: 8px;
-      overflow-x: auto;
-      color: #9da7b3;
-    }
-    .card {
-      background: #161a22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    footer {
-      background: #161a22;
-      text-align: center;
-      padding: 15px;
-      border-top: 2px solid #30363d;
-      color: #9da7b3;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kubernetes Architecture — Interactive Visuals</title>
+<meta name="description" content="Raft-style interactive walkthrough of Kubernetes architecture: API Server, etcd, Admission Controllers, Scheduler, Controller Manager, and Nodes." />
+<style>
+  :root{
+    --bg:#0e1116; --panel:#121721; --panel2:#0c121a; --text:#e6edf3; --muted:#9da7b3;
+    --blue:#2f81f7; --green:#3fb950; --orange:#d29922; --red:#f85149; --purple:#b392f0;
+    --border:#2a3240; --accent:#6ea3ff; --yellow:#f2cc60;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1150px;margin:0 auto;padding:0 18px}
+  header{padding:28px 0;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(47,129,247,.10), transparent)}
+  h1{margin:0 0 6px}
+  h2{margin:26px 0 12px}
+  h3{margin:20px 0 8px}
+  p{color:var(--muted);line-height:1.7;margin:8px 0}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.blue{background:var(--blue)} .dot.green{background:var(--green)}
+  .dot.orange{background:var(--orange)} .dot.purple{background:var(--purple)}
+  .dot.red{background:var(--red)} .dot.yellow{background:var(--yellow)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .card.alt{background:var(--panel2)}
+  .grid{display:grid;gap:16px}
+  @media(min-width:960px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:repeat(3,1fr)} }
+  .diagram{background:#0b1017;border:1px solid var(--border);border-radius:14px;padding:16px}
+  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .node{background:#101622;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+  .title{font-weight:600}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  button{background:#1f6feb;color:white;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.secondary{background:#0c1118;color:var(--text);border:1px solid var(--border)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .timeline{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .stepdot{width:14px;height:14px;border-radius:50%;background:#1b2330;border:1px solid var(--border)}
+  .stepdot.active{background:var(--blue)}
+  .callout{border-left:4px solid var(--blue);background:#0c121a;border-radius:10px;padding:12px;margin:8px 0}
+  .kbd{display:inline-block;border:1px solid var(--border);border-bottom-width:3px;border-radius:6px;padding:2px 6px;background:#0c121a;color:#cbd3dd;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .list{margin:10px 0 0 0;padding-left:18px}
+  .list li{margin:6px 0}
+  .badge{display:inline-block;padding:4px 8px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:#0f1420;margin-right:6px}
+  .svgwrap{margin-top:12px}
+  footer{border-top:1px solid var(--border);padding:18px;margin-top:24px;color:var(--muted)}
+  /* simple animations */
+  .fade{animation:fade .35s ease}
+  @keyframes fade{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .pulse{animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,129,247,0.6)}70%{box-shadow:0 0 0 10px rgba(47,129,247,0)}100%{box-shadow:0 0 0 0 rgba(47,129,247,0)}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Kubernetes Architecture — Visual Learning</h1>
-    <p>Understand the complete Kubernetes architecture and its components step by step.</p>
-  </header>
-
-  <div class="container">
-    <section class="diagram">
-      <h2>Overall Kubernetes Architecture Diagram</h2>
-      <pre>
-+-----------------------------+
-|         API Server          |
-+-------------+---------------+
-              |
-   +----------+----------+
-   |                     |
-   v                     v
-+--------+         +-------------+
-|  etcd  |         | Admission   |
-| state  |         | Controllers |
-+--------+         +-------------+
-                          |
-                          v
-                 +----------------+
-                 |   Scheduler    |
-                 +----------------+
-                          |
-                          v
-                 +----------------+
-                 | Controller Mgr |
-                 +----------------+
-                          |
-                          v
-                 +----------------+
-                 | Worker Nodes   |
-                 | (kubelet,pods) |
-                 +----------------+
-      </pre>
-      <p>This diagram shows how the control plane and worker nodes interact to manage workloads.</p>
-    </section>
-
-    <section class="card">
-      <h2>API Server</h2>
-      <p>The API Server is the gateway to the cluster. It validates and processes requests from kubectl, controllers, and external clients.</p>
-    </section>
-
-    <section class="card">
-      <h2>etcd</h2>
-      <p>etcd is a distributed key-value store that holds the entire cluster state, including pods, deployments, and configurations.</p>
-    </section>
-
-    <section class="card">
-      <h2>Admission Controllers</h2>
-      <p>Admission Controllers enforce policies and can mutate or validate objects before they are persisted in etcd.</p>
-    </section>
-
-    <section class="card">
-      <h2>Scheduler</h2>
-      <p>The Scheduler assigns unscheduled pods to nodes based on resource availability, constraints, and policies.</p>
-    </section>
-
-    <section class="card">
-      <h2>Controller Manager</h2>
-      <p>The Controller Manager runs controllers that reconcile desired state with actual state, ensuring workloads are maintained.</p>
-    </section>
-
-    <section class="card">
-      <h2>Worker Nodes</h2>
-      <p>Worker nodes run application workloads. Each node has a kubelet (agent), container runtime, and kube-proxy for networking.</p>
-    </section>
+<header>
+  <div class="wrap">
+    <h1>Kubernetes Architecture — Interactive Visual Walkthrough</h1>
+    <p>Start with the complete map, then dive into each component and the pod lifecycle. Click through the story, like Raft.</p>
+    <div class="legend">
+      <span><span class="dot blue"></span> Control plane</span>
+      <span><span class="dot orange"></span> State (etcd)</span>
+      <span><span class="dot green"></span> Worker/data plane</span>
+      <span><span class="dot purple"></span> Policy/admission</span>
+      <span><span class="dot yellow"></span> Networking</span>
+    </div>
   </div>
+</header>
 
-  <footer>
-    <p>Built for learning Kubernetes architecture. Extend this site with more topics like networking, storage, and security.</p>
-  </footer>
-</body>
-</html>
+<main class="wrap">
+  <!-- 1) Full architecture map -->
+  <section class="card">
+    <h2>Complete architecture map</h2>
+    <p class="callout">This overview shows how the control plane governs the data plane to maintain desired state.</p>
+    <div class="diagram" id="archmap">
+      <div class="grid grid-3">
+        <div class="node fade"><span class="dot blue"></span>
+          <div><div class="title">API Server</div>
+          <p class="muted">Gateway for all requests: validates, authenticates, authorizes, and routes.</p></div>
+        </div>
+        <div class="node fade"><span class="dot orange"></span>
+          <div><div class="title">etcd</div>
+          <p class="muted">Distributed KV store
