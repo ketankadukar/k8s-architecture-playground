@@ -1,230 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kubernetes Architecture — Visual Notes</title>
+  <meta charset="UTF-8">
+  <title>Kubernetes Architecture Learning Site</title>
   <style>
-    :root{
-      --bg:#0e1116; --panel:#161a22; --text:#e6edf3; --muted:#9da7b3;
-      --blue:#2f81f7; --green:#3fb950; --orange:#d29922; --red:#f85149; --purple:#b392f0;
-      --border:#30363d; --accent:#6ea3ff;
+    body {
+      font-family: Arial, sans-serif;
+      background: #0e1116;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
     }
-    *{box-sizing:border-box}
-    html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-    a{color:var(--accent); text-decoration:none}
-    a:hover{text-decoration:underline}
-    header{padding:32px 20px; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(47,129,247,.12), transparent)}
-    .wrap{max-width:1100px; margin:0 auto; padding:0 20px}
-    h1{margin:0 0 8px}
-    h2{margin:32px 0 12px}
-    h3{margin:24px 0 8px}
-    p{color:var(--muted); line-height:1.6}
-    .grid{display:grid; gap:16px}
-    @media(min-width:900px){ .grid-3{grid-template-columns:repeat(3,1fr)} .grid-2{grid-template-columns:1.2fr .8fr} }
-    .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px}
-    .label{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
-    .badge{display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border); background:#11161f}
-    .legend{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
-    .legend span{display:inline-flex; align-items:center; gap:6px}
-    .dot{width:10px; height:10px; border-radius:50%}
-    .dot.blue{background:var(--blue)} .dot.green{background:var(--green)} .dot.orange{background:var(--orange)}
-    .dot.red{background:var(--red)} .dot.purple{background:var(--purple)}
-    .diagram{background:#0b0f14; border:1px solid var(--border); border-radius:12px; padding:12px; overflow:auto}
-    .node{background:#0c1118; border:1px solid var(--border); border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:10px}
-    .node .title{font-weight:600}
-    .stack{display:grid; gap:10px}
-    .row{display:grid; gap:10px}
-    @media(min-width:900px){ .row{grid-template-columns:repeat(3,1fr)} }
-    .connector{height:18px; border-left:2px dashed var(--border); margin:0 12px}
-    .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
-    button{background:#1f6feb; color:white; border:0; border-radius:8px; padding:10px 14px; cursor:pointer}
-    button.secondary{background:#0c1118; color:var(--text); border:1px solid var(--border)}
-    button:disabled{opacity:.5; cursor:not-allowed}
-    .stepbar{display:flex; gap:6px; margin-top:8px}
-    .stepdot{width:14px; height:14px; border-radius:50%; background:#1b2330; border:1px solid var(--border)}
-    .stepdot.active{background:var(--blue)}
-    .monospace{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-    .two-col{display:grid; gap:16px}
-    @media(min-width:900px){ .two-col{grid-template-columns:1fr 1fr} }
-    footer{border-top:1px solid var(--border); margin-top:32px; padding:20px; color:var(--muted)}
-    .callout{border-left:4px solid var(--blue); padding:10px 12px; background:#0c121a; border-radius:8px}
-    ul{margin:10px 0 0 0; padding-left:18px}
-    li{margin:6px 0}
-    b.label{font-weight:600}
+    header {
+      background: #161a22;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #30363d;
+    }
+    h1, h2 {
+      color: #2f81f7;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+    .diagram {
+      background: #0c1118;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    .diagram pre {
+      background: #11161f;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #9da7b3;
+    }
+    .card {
+      background: #161a22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    footer {
+      background: #161a22;
+      text-align: center;
+      padding: 15px;
+      border-top: 2px solid #30363d;
+      color: #9da7b3;
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <h1>Kubernetes Architecture — Control Plane & Scheduling</h1>
-      <p>Interactive notes covering the API Server, etcd, Admission Controllers, Scheduler, Controller Manager, and Node components.</p>
-      <div class="legend">
-        <span><span class="dot blue"></span> Control plane</span>
-        <span><span class="dot orange"></span> State</span>
-        <span><span class="dot green"></span> Worker node</span>
-        <span><span class="dot purple"></span> Policy</span>
-      </div>
-    </div>
+    <h1>Kubernetes Architecture — Visual Learning</h1>
+    <p>Understand the complete Kubernetes architecture and its components step by step.</p>
   </header>
 
-  <main class="wrap">
-    <section class="grid grid-2">
-      <div class="card">
-        <h2>Control plane overview</h2>
-        <div class="stack">
-          <div class="node"><span class="dot blue"></span><div><div class="title">API Server</div><p class="monospace">Gateway for all requests (kubectl, controllers, clients). Validates, authenticates, authorizes, and routes.</p></div></div>
-          <div class="node"><span class="dot orange"></span><div><div class="title">etcd</div><p class="monospace">Distributed key-value store holding cluster state (Pods, Deployments, ConfigMaps, Secrets).</p></div></div>
-          <div class="node"><span class="dot purple"></span><div><div class="title">Admission Controllers</div><p class="monospace">Policy hooks that mutate/validate objects after authN/Z, before persistence.</p></div></div>
-          <div class="node"><span class="dot blue"></span><div><div class="title">Scheduler</div><p class="monospace">Assigns unscheduled Pods to nodes based on resources, constraints, and policies.</p></div></div>
-          <div class="node"><span class="dot blue"></span><div><div class="title">Controller Manager</div><p class="monospace">Reconcilers (Deployment, ReplicaSet, Job, Node, etc.) drive actual state toward desired state.</p></div></div>
-        </div>
-      </div>
-
-      <div class="card diagram" id="flow">
-        <h2>Pod lifecycle flow (interactive)</h2>
-        <p class="callout">Click through to see how a Pod request travels the control plane and lands on a worker node.</p>
-
-        <div class="controls">
-          <button id="prev">◀ Prev</button>
-          <button id="next">Next ▶</button>
-          <button class="secondary" id="reset">Reset</button>
-        </div>
-        <div id="frame" style="margin-top:12px"></div>
-        <div class="stepbar" id="stepbar"></div>
-      </div>
-    </section>
-
-    <section class="two-col">
-      <div class="card">
-        <h2>Scheduling notes</h2>
-        <ul>
-          <li><b class="label">Inputs:</b> Pod spec (requests/limits), node capacity, taints/tolerations, affinity/anti-affinity, topology spread.</li>
-          <li><b class="label">Pre-filter:</b> Discard nodes that cannot meet basic constraints (resource, taints).</li>
-          <li><b class="label">Filter:</b> Score candidate nodes with plugins (e.g., resource balance, topology, locality).</li>
-          <li><b class="label">Bind:</b> Write decision to API Server; kubelet on target node sees the Pod and starts it.</li>
-          <li><b class="label">Re-scheduling:</b> If nodes fail or pressure changes, controllers recreate/move Pods to maintain desired state.</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <h2>Node components</h2>
-        <ul>
-          <li><b class="label">Kubelet:</b> Node agent watching API Server; ensures containers are running via the container runtime.</li>
-          <li><b class="label">Container runtime:</b> containerd/CRI-O via CRI; pulls images, creates containers.</li>
-          <li><b class="label">Kube-proxy:</b> Service IPs and load-balancing via iptables/IPVS for ClusterIP/NodePort.</li>
-          <li><b class="label">CNI plugin:</b> Pod networking (Calico, Flannel, Cilium) providing IP assignment and routing.</li>
-          <li><b class="label">Pods:</b> Smallest deployable unit; one or more containers with shared network/storage.</li>
-        </ul>
-      </div>
+  <div class="container">
+    <section class="diagram">
+      <h2>Overall Kubernetes Architecture Diagram</h2>
+      <pre>
++-----------------------------+
+|         API Server          |
++-------------+---------------+
+              |
+   +----------+----------+
+   |                     |
+   v                     v
++--------+         +-------------+
+|  etcd  |         | Admission   |
+| state  |         | Controllers |
++--------+         +-------------+
+                          |
+                          v
+                 +----------------+
+                 |   Scheduler    |
+                 +----------------+
+                          |
+                          v
+                 +----------------+
+                 | Controller Mgr |
+                 +----------------+
+                          |
+                          v
+                 +----------------+
+                 | Worker Nodes   |
+                 | (kubelet,pods) |
+                 +----------------+
+      </pre>
+      <p>This diagram shows how the control plane and worker nodes interact to manage workloads.</p>
     </section>
 
     <section class="card">
-      <h2>API Server request path</h2>
-      <ul>
-        <li><b class="label">AuthN:</b> Client certs, tokens, OIDC.</li>
-        <li><b class="label">AuthZ:</b> RBAC, ABAC, Webhook.</li>
-        <li><b class="label">Admission:</b> Mutating/Validating webhooks, built-in controllers (quotas, limits, security).</li>
-        <li><b class="label">Persistence:</b> Object stored in etcd (source of truth).</li>
-        <li><b class="label">Watch/Notify:</b> Controllers and kubelets watch for changes to reconcile.</li>
-      </ul>
+      <h2>API Server</h2>
+      <p>The API Server is the gateway to the cluster. It validates and processes requests from kubectl, controllers, and external clients.</p>
     </section>
 
     <section class="card">
-      <h2>Control plane vs data plane</h2>
-      <ul>
-        <li><b class="label">Control plane:</b> API Server, etcd, Scheduler, Controller Manager, Admission Controllers.</li>
-        <li><b class="label">Data plane:</b> Worker nodes (kubelet, runtime, kube-proxy, Pods) that run application workloads.</li>
-        <li><b class="label">Contract:</b> Desired state declared (YAML manifests); control plane ensures data plane matches it.</li>
-      </ul>
+      <h2>etcd</h2>
+      <p>etcd is a distributed key-value store that holds the entire cluster state, including pods, deployments, and configurations.</p>
     </section>
-  </main>
 
-  <footer class="wrap">
-    <p>Built for learning. Customize and extend this page to explore deeper topics (storage, networking, security).</p>
+    <section class="card">
+      <h2>Admission Controllers</h2>
+      <p>Admission Controllers enforce policies and can mutate or validate objects before they are persisted in etcd.</p>
+    </section>
+
+    <section class="card">
+      <h2>Scheduler</h2>
+      <p>The Scheduler assigns unscheduled pods to nodes based on resource availability, constraints, and policies.</p>
+    </section>
+
+    <section class="card">
+      <h2>Controller Manager</h2>
+      <p>The Controller Manager runs controllers that reconcile desired state with actual state, ensuring workloads are maintained.</p>
+    </section>
+
+    <section class="card">
+      <h2>Worker Nodes</h2>
+      <p>Worker nodes run application workloads. Each node has a kubelet (agent), container runtime, and kube-proxy for networking.</p>
+    </section>
+  </div>
+
+  <footer>
+    <p>Built for learning Kubernetes architecture. Extend this site with more topics like networking, storage, and security.</p>
   </footer>
-
-  <script>
-    const steps = [
-      {
-        title: "1) Submit Pod (kubectl → API Server)",
-        color: "blue",
-        body: "A user applies a Pod/Deployment manifest. The API Server authenticates, authorizes, and validates the request."
-      },
-      {
-        title: "2) Admission Controllers",
-        color: "purple",
-        body: "Mutating/Validating admission controllers enforce policies (e.g., inject sidecars, set defaults, security checks)."
-      },
-      {
-        title: "3) Persist to etcd",
-        color: "orange",
-        body: "The API Server writes the desired object to etcd, making it part of the cluster’s source of truth."
-      },
-      {
-        title: "4) Scheduler sees an unscheduled Pod",
-        color: "blue",
-        body: "Via watch APIs, the Scheduler discovers Pods without a node assignment and evaluates candidate nodes."
-      },
-      {
-        title: "5) Score and bind to a node",
-        color: "blue",
-        body: "Filtering and scoring plugins select the best node. The binding is written back through the API Server."
-      },
-      {
-        title: "6) Kubelet starts the Pod",
-        color: "green",
-        body: "The kubelet on the chosen node pulls the image and asks the runtime to create containers. Networking is set up by CNI."
-      },
-      {
-        title: "7) Service routing (kube-proxy)",
-        color: "green",
-        body: "Traffic to Service ClusterIP/NodePort is load-balanced to Pod endpoints via iptables/IPVS."
-      },
-      {
-        title: "8) Controllers reconcile",
-        color: "blue",
-        body: "Controller Manager monitors desired vs actual state, recreating or scaling Pods to maintain availability."
-      }
-    ];
-
-    const frame = document.getElementById('frame');
-    const stepbar = document.getElementById('stepbar');
-    const prev = document.getElementById('prev');
-    const next = document.getElementById('next');
-    const reset = document.getElementById('reset');
-    let idx = 0;
-
-    function render() {
-      const s = steps[idx];
-      frame.innerHTML = `
-        <div class="node">
-          <span class="dot ${s.color}"></span>
-          <div>
-            <div class="title">${s.title}</div>
-            <p>${s.body}</p>
-          </div>
-        </div>
-        <div style="margin-top:12px">
-          <svg width="100%" height="80" viewBox="0 0 800 80">
-            <defs>
-              <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L9,3 z" fill="#2f81f7" />
-              </marker>
-            </defs>
-            <line x1="20" y1="40" x2="780" y2="40" stroke="#2f81f7" stroke-width="2" marker-end="url(#arrow)"/>
-          </svg>
-        </div>
-      `;
-      stepbar.innerHTML = steps.map((_, i)=>`<div class="stepdot ${i===idx?'active':''}"></div>`).join('');
-      prev.disabled = idx === 0;
-      next.disabled = idx === steps.length - 1;
-    }
-
-    prev.addEventListener('click', ()=>{ idx = Math.max(0, idx - 1); render(); });
-    next.addEventListener('click', ()=>{ idx = Math.min(steps.length - 1, idx + 1); render(); });
-    reset.addEventListener('click', ()=>{ idx = 0; render(); });
-    render();
-  </script>
 </body>
 </html>
